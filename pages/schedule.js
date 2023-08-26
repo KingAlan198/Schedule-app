@@ -15,6 +15,11 @@ const Schedule = () => {
       return;
     }
 
+    if (aPlayers > 0 && aPlayers < 4){
+      alert('Scheduling app needs 0 or 4 or more A-Players.')
+      return;
+    }
+
     // Define the API endpoint URL
     const apiUrl = `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/schedule/totalplayers/${totalPlayers}/aplayers/${aPlayers}`;
 
@@ -30,6 +35,11 @@ const Schedule = () => {
   return (
     <div>
       <h1>Schedule Data</h1>
+      <ul>
+        <li>Select the number of A-Players.  The same number of C-Players will be assumed.</li>
+        <li>An A-Player will always play with a C-Player.</li>
+        <li>No two players will ever play on the same team.</li>
+      </ul>
       <form onSubmit={handleSubmit}>
         <label>
           Total Players:
@@ -40,6 +50,7 @@ const Schedule = () => {
             placeholder="Enter total players"
           />
         </label>
+        <br/>
         <label>
           A-Players:
           <input
@@ -49,6 +60,7 @@ const Schedule = () => {
             placeholder="Enter A-Players"
           />
         </label>
+        <br/>
         <button type="submit">Generate Schedule</button>
       </form>
 
