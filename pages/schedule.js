@@ -7,6 +7,26 @@ const Schedule = () => {
   const [aPlayers, setAPlayers] = useState('');
   const [scheduleData, setScheduleData] = useState(null);
 
+  // Function to create the audit section content
+  const renderAuditSection = () => {
+    if (!scheduleData || !scheduleData.audit) {
+      return null; // No audit data available
+    }
+
+    return (
+      <div>
+        <h2>Audit</h2>
+        <ul>
+          {scheduleData.audit.map((auditItem, index) => (
+            <li key={index}>
+              Player {auditItem.key} plays more than once with: {auditItem.duplicates.join(', ')}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent the default form submission behavior
 
@@ -66,22 +86,26 @@ const Schedule = () => {
 
       {scheduleData && (
         <div>
-          {Object.keys(scheduleData).map((round) => (
-            <div key={round}>
-              <h2>Round {round.slice(-1)}</h2>
-              <ul>
-                {scheduleData[round].map((match, index) => (
-                  <li key={index}>
-                       Team {index +1 } - {match.golfer1}, {match.golfer2}, {match.golfer3}, {match.golfer4}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {Object.keys(scheduleData)
+            .filter((round) => round.startsWith('round') && !isNaN(parseInt(round.replace('round', ''))))
+            .map((round) => (
+              <div key={round}>
+                <h2>Round {round.replace('round', '')}</h2>
+                <ul>
+                  {scheduleData[round].map((match, index) => (
+                    <li key={index}>
+                      Team {index + 1} - {match.golfer1}, {match.golfer2}, {match.golfer3}, {match.golfer4}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
         </div>
       )}
+      {renderAuditSection()}
     </div>
   );
 };
+
 
 export default Schedule;
