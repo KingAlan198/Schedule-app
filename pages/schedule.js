@@ -1,4 +1,3 @@
-// components/Schedule.js
 import { useState } from 'react';
 import axios from 'axios';
 
@@ -6,6 +5,39 @@ const Schedule = () => {
   const [totalPlayers, setTotalPlayers] = useState('');
   const [aPlayers, setAPlayers] = useState('');
   const [scheduleData, setScheduleData] = useState(null);
+  const [error, setError] = useState(null); // State to manage errors
+
+  const handleRetry = async () => {
+    setError(null); // Clear the error message
+    await handleSubmit(); // Retry the API request
+  };
+
+  const handleSubmit = async (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+
+    if (totalPlayers === '' || aPlayers === '') {
+      alert('Please enter values for Total Players and A-Players.');
+      return;
+    }
+
+    if (aPlayers > 0 && aPlayers < 4) {
+      alert('Scheduling app needs 0 or 4 or more A-Players.');
+      return;
+    }
+
+    const apiUrl = `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/schedule/totalplayers/${totalPlayers}/aplayers/${aPlayers}`;
+
+    try {
+      const response = await axios.get(apiUrl);
+      setScheduleData(response.data);
+      setError(null); // Clear any previous errors on success
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('An error occurred. Please press the button to retry.'); // Set error message
+    }
+  };
 
   // Function to create the audit section content
   const renderAuditSection = () => {
@@ -27,29 +59,16 @@ const Schedule = () => {
     );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent the default form submission behavior
-
-    if (totalPlayers === '' || aPlayers === '') {
-      alert('Please enter values for Total Players and A-Players.');
-      return;
+  const renderAuditMessage = () => {
+    if (!scheduleData || !scheduleData.audit) {
+      return null; // No audit data available
     }
 
-    if (aPlayers > 0 && aPlayers < 4){
-      alert('Scheduling app needs 0 or 4 or more A-Players.')
-      return;
-    }
-
-    // Define the API endpoint URL
-    const apiUrl = `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/schedule/totalplayers/${totalPlayers}/aplayers/${aPlayers}`;
-
-    try {
-      // Fetch data from the API
-      const response = await axios.get(apiUrl);
-      setScheduleData(response.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
+    return (
+      <div>
+        <h2>Warning {scheduleData.audit.length} duplicates found.</h2>
+      </div>
+    );
   };
 
   return (
@@ -84,6 +103,15 @@ const Schedule = () => {
         <button type="submit">Generate Schedule</button>
       </form>
 
+      {error && (
+        <div>
+          <p>{error}</p>
+          <button onClick={handleRetry}>Retry</button>
+        </div>
+      )}
+
+      {renderAuditMessage()}
+
       {scheduleData && (
         <div>
           {Object.keys(scheduleData)
@@ -102,10 +130,10 @@ const Schedule = () => {
             ))}
         </div>
       )}
+
       {renderAuditSection()}
     </div>
   );
 };
-
 
 export default Schedule;
