@@ -60,7 +60,7 @@ const Schedule = () => {
   };
 
   const renderAuditMessage = () => {
-    if (!scheduleData || !scheduleData.audit) {
+    if (!scheduleData || !scheduleData.audit || scheduleData.audit.length === 0) {
       return null; // No audit data available
     }
 
