@@ -80,7 +80,8 @@ const Schedule = () => {
     <div>
       <h1>Schedule Generator</h1>
       <ul>
-        <li>Select the number of A-Players.  The same number of C-Players will be assumed.</li>
+        <li>Enter the total number of players.</li>
+        <li>Enter the number of A-Players.  The same number of C-Players will be assumed.</li>
         <li>An A-Player will always play with a C-Player.</li>
         <li>Two A-Players will never play together.</li>
         <li>No players will ever play together more than once.</li>
