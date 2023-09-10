@@ -78,7 +78,7 @@ const Schedule = () => {
 
   return (
     <div>
-      <h1>Schedule Data</h1>
+      <h1>Schedule Generator</h1>
       <ul>
         <li>Select the number of A-Players.  The same number of C-Players will be assumed.</li>
         <li>An A-Player will always play with a C-Player.</li>
