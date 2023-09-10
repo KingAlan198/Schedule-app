@@ -41,8 +41,13 @@ const Schedule = () => {
 
   // Function to create the audit section content
   const renderAuditSection = () => {
-    if (!scheduleData || !scheduleData.audit) {
-      return null; // No audit data available
+    if (!scheduleData || !scheduleData.audit || scheduleData.audit.length === 0) {
+      return (
+        <div>
+          <h2>Audit</h2>
+          <p>No dupicates found.</p>
+        </div>
+      );
     }
 
     return (
@@ -77,7 +82,8 @@ const Schedule = () => {
       <ul>
         <li>Select the number of A-Players.  The same number of C-Players will be assumed.</li>
         <li>An A-Player will always play with a C-Player.</li>
-        <li>No two players will ever play on the same team.</li>
+        <li>Two A-Players will never play together.</li>
+        <li>No players will ever play together more than once.</li>
       </ul>
       <form onSubmit={handleSubmit}>
         <label>
