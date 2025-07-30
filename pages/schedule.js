@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import axios from 'axios';
 
@@ -6,6 +7,33 @@ const Schedule = () => {
   const [aPlayers, setAPlayers] = useState('');
   const [scheduleData, setScheduleData] = useState(null);
   const [error, setError] = useState(null); // State to manage errors
+  const [saveUrl, setSaveUrl] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [shareId, setShareId] = useState(null);
+  // Save schedule handler
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    setSaveUrl(null);
+    try {
+      // Use your deployed API endpoint here:
+      const apiUrl = 'https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/save-schedule';
+      const response = await axios.post(apiUrl, { schedule: scheduleData });
+      setSaveUrl(response.data.url);
+      // Extract the schedule ID from the pre-signed URL for sharing
+      const match = response.data.url.match(/schedules\/([a-f0-9\-]+)\.json/);
+      if (match && match[1]) {
+        setShareId(match[1]);
+      } else {
+        setShareId(null);
+      }
+    } catch (err) {
+      setSaveError('Failed to save schedule.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleRetry = async () => {
     setError(null); // Clear the error message
@@ -33,6 +61,7 @@ const Schedule = () => {
       const response = await axios.get(apiUrl);
       setScheduleData(response.data);
       setError(null); // Clear any previous errors on success
+      setShareId(null); // Hide shareable link and show save button
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('An error occurred. Please press the button to retry.'); // Set error message
@@ -119,6 +148,7 @@ const Schedule = () => {
 
       {renderAuditMessage()}
 
+
       {scheduleData && (
         <div>
           {Object.keys(scheduleData)
@@ -135,6 +165,38 @@ const Schedule = () => {
                 </ul>
               </div>
             ))}
+
+          {/* Save Button and Result */}
+          <div style={{ marginTop: 20 }}>
+            {!shareId && (
+              <button onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Schedule'}
+              </button>
+            )}
+            {shareId && (
+              <div style={{ marginTop: 10 }}>
+                <strong>Share this link for a nice view:</strong>
+                <div>
+                  <input
+                    type="text"
+                    value={window.location.origin + '/view/' + shareId}
+                    readOnly
+                    style={{ width: '80%' }}
+                    onFocus={e => e.target.select()}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.origin + '/view/' + shareId);
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Copy View Link
+                  </button>
+                </div>
+              </div>
+            )}
+            {saveError && <div style={{ color: 'red' }}>{saveError}</div>}
+          </div>
         </div>
       )}
 
