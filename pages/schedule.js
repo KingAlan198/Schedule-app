@@ -17,9 +17,14 @@ const Schedule = () => {
     setSaveError(null);
     setSaveUrl(null);
     try {
-      // Use your deployed API endpoint here:
+      // Always include aPlayers and totalPlayers in the saved schedule
+      const scheduleToSave = {
+        ...scheduleData,
+        aPlayers: Number(aPlayers),
+        totalPlayers: Number(totalPlayers)
+      };
       const apiUrl = 'https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/save-schedule';
-      const response = await axios.post(apiUrl, { schedule: scheduleData });
+      const response = await axios.post(apiUrl, { schedule: scheduleToSave });
       setSaveUrl(response.data.url);
       // Extract the schedule ID from the pre-signed URL for sharing
       const match = response.data.url.match(/schedules\/([a-f0-9\-]+)\.json/);
@@ -191,6 +196,15 @@ const Schedule = () => {
                     style={{ marginLeft: 8 }}
                   >
                     Copy View Link
+                  </button>
+                </div>
+                <div style={{ marginTop: 20 }}>
+                  <button
+                    onClick={() => {
+                      window.location.href = `/assign/${shareId}`;
+                    }}
+                  >
+                    Assign Players
                   </button>
                 </div>
               </div>
