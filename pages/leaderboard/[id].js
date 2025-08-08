@@ -98,11 +98,51 @@ const LeaderboardPage = () => {
     if (sortedPlayers.length === 0) {
       return <div style={{ marginTop: 24, color: '#888' }}>No individual scores available yet.</div>;
     }
+
+    // Calculate places with tie handling
+    const playersWithPlaces = [];
+    let currentPlace = 1;
+    
+    sortedPlayers.forEach((player, index) => {
+      const [playerName, score] = player;
+      let place = currentPlace;
+      let isTied = false;
+      
+      // Check if tied with previous player
+      if (index > 0 && sortedPlayers[index - 1][1] === score) {
+        // Use the same place as previous player
+        place = playersWithPlaces[index - 1].place;
+        isTied = true;
+        // Mark previous player as tied too if not already
+        if (!playersWithPlaces[index - 1].isTied) {
+          playersWithPlaces[index - 1].isTied = true;
+        }
+      }
+      
+      // Check if tied with next player
+      if (index < sortedPlayers.length - 1 && sortedPlayers[index + 1][1] === score) {
+        isTied = true;
+      }
+      
+      playersWithPlaces.push({
+        player: playerName,
+        score,
+        place,
+        isTied,
+        originalIndex: index
+      });
+      
+      // Update currentPlace for next iteration
+      if (index === sortedPlayers.length - 1 || sortedPlayers[index + 1][1] !== score) {
+        currentPlace = index + 2; // Next available place
+      }
+    });
     
     return (
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
         <thead>
           <tr style={{ background: '#f0f0f0' }}>
+            <th style={{ textAlign: 'center', padding: 8 }}>Place</th>
             <th style={{ textAlign: 'left', padding: 8 }}>Player</th>
             <th style={{ textAlign: 'right', padding: 8 }}>Total</th>
             {availableRounds.map(r => (
@@ -111,15 +151,18 @@ const LeaderboardPage = () => {
           </tr>
         </thead>
         <tbody>
-          {sortedPlayers.map(([player, total]) => (
+          {playersWithPlaces.map(({ player, score, place, isTied }) => (
             <tr key={player}>
+              <td style={{ padding: 8, textAlign: 'center', fontWeight: 'bold' }}>
+                {isTied ? `T${place}` : place}
+              </td>
               <td style={{ padding: 8 }}>
                 {(() => {
                   const match = player.match(/\(([^)]+)\)$/);
                   return match ? match[1] : '';
                 })()}
               </td>
-              <td style={{ padding: 8, textAlign: 'right' }}>{total}</td>
+              <td style={{ padding: 8, textAlign: 'right' }}>{score}</td>
               {availableRounds.map(r => (
                 <td key={r} style={{ padding: 8, textAlign: 'right' }}>{scores?.playerScores?.[player]?.[r] ?? '-'}</td>
               ))}
