@@ -10,6 +10,15 @@ const LeaderboardPage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('individual');
   const [finalizedSchedule, setFinalizedSchedule] = useState(null);
+  const [showQR, setShowQR] = useState(false);
+
+  // Get the current page URL for QR code
+  const getPageUrl = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.href;
+    }
+    return '';
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -160,7 +169,46 @@ const LeaderboardPage = () => {
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 32 }}>
-      <h1>Leaderboard</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ margin: 0 }}>Leaderboard</h1>
+        <button
+          onClick={() => setShowQR(!showQR)}
+          style={{
+            padding: '8px 16px',
+            background: '#1976d2',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
+        >
+          {showQR ? 'Hide QR' : 'Show QR'}
+        </button>
+      </div>
+
+      {/* QR Code Section */}
+      {showQR && (
+        <div style={{ 
+          marginBottom: 24, 
+          padding: 16, 
+          background: '#f8f8f8', 
+          borderRadius: 6, 
+          textAlign: 'center' 
+        }}>
+          <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
+            Scan to share this leaderboard:
+          </div>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(getPageUrl())}`}
+            alt="QR Code for Leaderboard"
+            style={{ border: '1px solid #ddd', borderRadius: 4 }}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: '#888', wordBreak: 'break-all' }}>
+            {getPageUrl()}
+          </div>
+        </div>
+      )}
       
       {/* Tab Navigation */}
       <div style={{ marginBottom: 24 }}>
