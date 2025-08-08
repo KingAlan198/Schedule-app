@@ -13,10 +13,32 @@ const AdminScoresPage = () => {
 
   useEffect(() => {
     if (!id) return;
-    // Fetch finalized schedule
-    axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/view-finalized-schedule/${id}`)
-      .then(res => setSchedule(res.data))
-      .catch(() => setMessage('Could not load schedule.'));
+    
+    // Fetch both finalized schedule and existing scores
+    Promise.all([
+      axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/view-finalized-schedule/${id}`).catch(() => null),
+      axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/get-scores/${id}`).catch(() => null)
+    ]).then(([scheduleRes, scoresRes]) => {
+      if (scheduleRes) {
+        const scheduleData = typeof scheduleRes.data === 'string' ? JSON.parse(scheduleRes.data) : scheduleRes.data;
+        setSchedule(scheduleData);
+      } else {
+        setMessage('Could not load schedule.');
+      }
+      
+      if (scoresRes && scoresRes.data && scoresRes.data.rounds) {
+        // Convert existing scores to the format expected by the admin form
+        const existingScores = {};
+        Object.keys(scoresRes.data.rounds).forEach(round => {
+          existingScores[round] = {};
+          Object.entries(scoresRes.data.rounds[round]).forEach(([teamKey, teamData]) => {
+            existingScores[round][teamKey] = teamData.score || '';
+          });
+        });
+        setScores(existingScores);
+        setMessage('Loaded existing scores.');
+      }
+    });
   }, [id]);
 
   const handleScoreChange = (round, team, value) => {
