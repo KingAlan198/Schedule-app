@@ -22,6 +22,10 @@ const LeaderboardPage = () => {
 
   useEffect(() => {
     if (!id) return;
+    fetchData();
+  }, [id]);
+
+  const fetchData = () => {
     setLoading(true);
     setError(null);
     
@@ -40,7 +44,11 @@ const LeaderboardPage = () => {
       setError('Could not load leaderboard.');
       setLoading(false);
     });
-  }, [id]);
+  };
+
+  const handleRefresh = () => {
+    fetchData();
+  };
 
   if (loading) return <div>Loading leaderboard...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -268,20 +276,37 @@ const LeaderboardPage = () => {
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 32 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Leaderboard</h1>
-        <button
-          onClick={() => setShowQR(!showQR)}
-          style={{
-            padding: '8px 16px',
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: 14,
-          }}
-        >
-          {showQR ? 'Hide QR' : 'Show QR'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            style={{
+              padding: '8px 16px',
+              background: loading ? '#ccc' : '#28a745',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 14,
+            }}
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowQR(!showQR)}
+            style={{
+              padding: '8px 16px',
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}
+          >
+            {showQR ? 'Hide QR' : 'Show QR'}
+          </button>
+        </div>
       </div>
 
       {/* QR Code Section */}

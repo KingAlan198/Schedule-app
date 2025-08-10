@@ -1,22 +1,19 @@
 // pages/index.js
-export default function Home({ formattedDate }) {
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+
+export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to /schedule when the homepage loads
+    router.replace('/schedule');
+  }, [router]);
+
+  // Show loading message while redirecting
   return (
-    <>
-      <h1>Static page</h1>
-      <p>This page is static. It was built on {formattedDate}.</p>
-      <p>
-        <a href="/ssr">View a server-side rendered page.</a>
-      </p>
-    </>
+    <div style={{ textAlign: 'center', padding: '50px' }}>
+      <h1>Redirecting to Schedule Generator...</h1>
+    </div>
   );
-}
-
-export async function getStaticProps() {
-  const buildDate = Date.now();
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
-    dateStyle: "long",
-    timeStyle: "long",
-  }).format(buildDate);
-
-  return { props: { formattedDate } };
 }
