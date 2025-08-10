@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import Link from 'next/link';
 
 
 function renderRound(roundObj) {
@@ -49,7 +50,7 @@ const FinalizedSchedulePage = () => {
   const [loading, setLoading] = useState(true);
   const [rounds, setRounds] = useState([]);
   const [selectedRound, setSelectedRound] = useState(0);
-
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -91,7 +92,69 @@ const FinalizedSchedulePage = () => {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 32 }}>
-      <h1>Finalized Schedule</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ margin: 0 }}>Finalized Schedule</h1>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button 
+            onClick={() => setShowQR(!showQR)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 14
+            }}
+          >
+            {showQR ? 'Hide QR' : 'Share QR'}
+          </button>
+          <Link href={`/admin/${id}`} style={{ textDecoration: 'none' }}>
+            <button style={{
+              padding: '8px 16px',
+              background: '#28a745',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}>
+              Admin Scores
+            </button>
+          </Link>
+          <Link href={`/leaderboard/${id}`} style={{ textDecoration: 'none' }}>
+            <button style={{
+              padding: '8px 16px',
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 14,
+            }}>
+              Leaderboard
+            </button>
+          </Link>
+        </div>
+      </div>
+      
+      {showQR && (
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: 24, 
+          padding: 16, 
+          border: '1px solid #ddd', 
+          borderRadius: 8,
+          backgroundColor: '#f9f9f9'
+        }}>
+          <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>Scan to share this schedule:</p>
+          <img 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`}
+            alt="QR Code for schedule"
+            style={{ border: '1px solid #ccc' }}
+          />
+        </div>
+      )}
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {rounds.length > 0 ? (

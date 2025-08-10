@@ -65,9 +65,10 @@ const LeaderboardPage = () => {
       Object.entries(scores.rounds[round]).forEach(([team, teamData]) => {
         teamsWithScores.push({
           team,
-          score: teamData.score || 0,
+          teamName: teamData.teamName || team, // Use custom team name if available
+          score: teamData.score,
           players: teamData.players || [],
-          hasScore: true
+          hasScore: teamData.score !== null && teamData.score !== undefined
         });
       });
     }
@@ -76,8 +77,25 @@ const LeaderboardPage = () => {
     if (teamsWithScores.length === 0 && finalizedSchedule?.[round]) {
       finalizedSchedule[round].forEach((teamObj, idx) => {
         const players = Object.values(teamObj);
+        const teamKey = `team${idx + 1}`;
+        
+        // Generate default team name based on round convention
+        const roundNum = parseInt(round.replace(/^round/i, ''));
+        let defaultTeamName;
+        
+        if (roundNum % 2 === 1) { // Odd rounds (1, 3): 1a, 1b, 2a, 2b
+          const groupNum = Math.floor(idx / 2) + 1;
+          const suffix = idx % 2 === 0 ? 'a' : 'b';
+          defaultTeamName = `${groupNum}${suffix}`;
+        } else { // Even rounds (2, 4): 10a, 10b, 11a, 11b
+          const groupNum = Math.floor(idx / 2) + 10;
+          const suffix = idx % 2 === 0 ? 'a' : 'b';
+          defaultTeamName = `${groupNum}${suffix}`;
+        }
+        
         teamsWithScores.push({
-          team: `Team ${idx + 1}`,
+          team: teamKey,
+          teamName: defaultTeamName,
           score: null,
           players: players,
           hasScore: false
@@ -180,6 +198,42 @@ const LeaderboardPage = () => {
       return <div style={{ marginTop: 24, color: '#888' }}>No team data for {round}</div>;
     }
 
+    // Check if any teams have scores
+    const hasAnyScores = teamScores.some(team => team.hasScore);
+
+    if (!hasAnyScores) {
+      // Before scores: Show team name (starting hole) and players
+      return (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
+          <thead>
+            <tr style={{ background: '#f0f0f0' }}>
+              <th style={{ textAlign: 'left', padding: 8 }}>Starting Hole</th>
+              <th style={{ textAlign: 'left', padding: 8 }}>Players</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teamScores.map(({ team, teamName, players }, index) => (
+              <tr key={team}>
+                <td style={{ padding: 8, fontWeight: 'bold' }}>
+                  {teamName || team}
+                </td>
+                <td style={{ padding: 8 }}>
+                  {Array.isArray(players) 
+                    ? players.map(player => {
+                        const match = player.match(/\(([^)]+)\)$/);
+                        return match ? match[1] : player;
+                      }).join(', ')
+                    : (players || 'N/A')
+                  }
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    // After scores: Show scores and players (no team name)
     return (
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
         <thead>
@@ -189,7 +243,7 @@ const LeaderboardPage = () => {
           </tr>
         </thead>
         <tbody>
-          {teamScores.map(({ team, score, players, hasScore }, index) => (
+          {teamScores.map(({ team, teamName, score, players, hasScore }, index) => (
             <tr key={team}>
               <td style={{ padding: 8, textAlign: 'right' }}>
                 {hasScore ? score : '-'}
