@@ -12,6 +12,8 @@ const AdminScoresPage = () => {
   const [selectedRoundIdx, setSelectedRoundIdx] = useState(0);
   const [teamNames, setTeamNames] = useState({});
   const [showQR, setShowQR] = useState(false);
+  const [withdrawnPlayers, setWithdrawnPlayers] = useState(new Set());
+  const [activeTab, setActiveTab] = useState('scores'); // 'scores' or 'withdrawals'
 
   useEffect(() => {
     if (!id) return;
@@ -86,6 +88,12 @@ const AdminScoresPage = () => {
           });
           return merged;
         });
+        
+        // Load withdrawn players if they exist
+        if (scoresRes.data.withdrawnPlayers) {
+          setWithdrawnPlayers(new Set(scoresRes.data.withdrawnPlayers));
+        }
+        
         setMessage(`Loaded existing scores for tournament ${id}.`);
       }
     });
@@ -109,6 +117,32 @@ const AdminScoresPage = () => {
         [team]: newName
       }
     }));
+  };
+
+  const handlePlayerWithdraw = (playerName) => {
+    setWithdrawnPlayers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(playerName)) {
+        newSet.delete(playerName); // Restore player
+      } else {
+        newSet.add(playerName); // Withdraw player
+      }
+      return newSet;
+    });
+  };
+
+  const saveWithdrawals = async () => {
+    setSaving(true);
+    setMessage('');
+    try {
+      await axios.post(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/save-withdrawals/${id}`, {
+        withdrawnPlayers: Array.from(withdrawnPlayers)
+      });
+      setMessage('Withdrawals saved!');
+    } catch (err) {
+      setMessage('Error saving withdrawals.');
+    }
+    setSaving(false);
   };
 
   const handleSave = async (round) => {
@@ -181,6 +215,46 @@ const AdminScoresPage = () => {
       )}
       
       {message && <div style={{ color: message.includes('Error') ? 'red' : 'green', marginBottom: 16 }}>{message}</div>}
+      
+      {/* Main Tab Navigation */}
+      <div style={{ marginBottom: 24, borderBottom: '2px solid #eee' }}>
+        <button
+          onClick={() => setActiveTab('scores')}
+          style={{
+            marginRight: 8,
+            padding: '8px 20px',
+            fontWeight: activeTab === 'scores' ? 'bold' : 'normal',
+            background: activeTab === 'scores' ? '#1976d2' : 'transparent',
+            color: activeTab === 'scores' ? '#fff' : '#1976d2',
+            border: activeTab === 'scores' ? 'none' : '2px solid #1976d2',
+            borderBottom: activeTab === 'scores' ? 'none' : '2px solid #1976d2',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontSize: 16
+          }}
+        >
+          Score Management
+        </button>
+        <button
+          onClick={() => setActiveTab('withdrawals')}
+          style={{
+            padding: '8px 20px',
+            fontWeight: activeTab === 'withdrawals' ? 'bold' : 'normal',
+            background: activeTab === 'withdrawals' ? '#d32f2f' : 'transparent',
+            color: activeTab === 'withdrawals' ? '#fff' : '#d32f2f',
+            border: activeTab === 'withdrawals' ? 'none' : '2px solid #d32f2f',
+            borderBottom: activeTab === 'withdrawals' ? 'none' : '2px solid #d32f2f',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontSize: 16
+          }}
+        >
+          Player Withdrawals
+        </button>
+      </div>
+
+      {activeTab === 'scores' && (
+        <div>
       <div style={{ marginBottom: 24 }}>
         {roundKeys.map((round, idx) => (
           <button
@@ -201,6 +275,7 @@ const AdminScoresPage = () => {
           </button>
         ))}
       </div>
+      
       <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 16 }}>
         <h2 style={{ marginBottom: 12 }}>{selectedRound.replace(/^round/i, 'Round ')}</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
@@ -247,6 +322,68 @@ const AdminScoresPage = () => {
         </div>
         <button onClick={() => handleSave(selectedRound)} disabled={saving} style={{ marginTop: 16, padding: '8px 24px', fontWeight: 'bold' }}>Save {selectedRound} Data</button>
       </div>
+      </div>
+      )}
+
+      {activeTab === 'withdrawals' && (
+        <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 16, background: '#f9f9f9' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h2 style={{ margin: 0, color: '#d32f2f' }}>Player Withdrawals</h2>
+            <button 
+              onClick={saveWithdrawals} 
+              disabled={saving}
+              style={{
+                padding: '8px 16px',
+                background: '#d32f2f',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                fontSize: 14
+              }}
+            >
+              {saving ? 'Saving...' : 'Save Withdrawals'}
+            </button>
+          </div>
+          <p style={{ marginBottom: 16, color: '#666' }}>
+            Click on players to withdraw them from the tournament. Withdrawn players will appear with strikethrough on the leaderboard.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {/* Get all unique players from all rounds */}
+            {[...new Set(
+              Object.values(schedule).flat().flatMap(teamObj => 
+                Object.values(teamObj).map(player => {
+                  // Ensure player is a string before calling match
+                  if (typeof player !== 'string') return String(player);
+                  const match = player.match(/\(([^)]+)\)$/);
+                  return match ? match[1] : player;
+                })
+              )
+            )].sort().map(playerName => {
+              const isWithdrawn = withdrawnPlayers.has(playerName);
+              return (
+                <button
+                  key={playerName}
+                  onClick={() => handlePlayerWithdraw(playerName)}
+                  style={{
+                    padding: '8px 12px',
+                    background: isWithdrawn ? '#d32f2f' : '#e0e0e0',
+                    color: isWithdrawn ? '#fff' : '#222',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    textDecoration: isWithdrawn ? 'line-through' : 'none',
+                    fontWeight: isWithdrawn ? 'bold' : 'normal'
+                  }}
+                >
+                  {playerName} {isWithdrawn ? '(WD)' : ''}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

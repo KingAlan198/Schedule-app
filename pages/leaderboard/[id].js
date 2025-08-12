@@ -11,6 +11,7 @@ const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState('individual');
   const [finalizedSchedule, setFinalizedSchedule] = useState(null);
   const [showQR, setShowQR] = useState(false);
+  const [withdrawnPlayers, setWithdrawnPlayers] = useState(new Set());
 
   // Get the current page URL for QR code
   const getPageUrl = () => {
@@ -34,7 +35,13 @@ const LeaderboardPage = () => {
       axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/get-scores/${id}`).catch(() => null),
       axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/view-finalized-schedule/${id}`).catch(() => null)
     ]).then(([scoresRes, scheduleRes]) => {
-      if (scoresRes) setScores(scoresRes.data);
+      if (scoresRes) {
+        setScores(scoresRes.data);
+        // Load withdrawn players if they exist
+        if (scoresRes.data.withdrawnPlayers) {
+          setWithdrawnPlayers(new Set(scoresRes.data.withdrawnPlayers));
+        }
+      }
       if (scheduleRes) {
         const scheduleData = typeof scheduleRes.data === 'string' ? JSON.parse(scheduleRes.data) : scheduleRes.data;
         setFinalizedSchedule(scheduleData);
@@ -125,17 +132,39 @@ const LeaderboardPage = () => {
       return <div style={{ marginTop: 24, color: '#888' }}>No individual scores available yet.</div>;
     }
 
-    // Calculate places with tie handling
+    // Separate withdrawn and active players
+    const activePlayers = [];
+    const withdrawnPlayersList = [];
+
+    // Calculate places with tie handling for active players only
     const playersWithPlaces = [];
     let currentPlace = 1;
     
     sortedPlayers.forEach((player, index) => {
       const [playerName, score] = player;
+      // Extract clean name from player identifier for withdrawal check
+      const cleanName = (() => {
+        const match = playerName.match(/\(([^)]+)\)$/);
+        return match ? match[1] : playerName;
+      })();
+      const isWithdrawn = withdrawnPlayers.has(playerName) || withdrawnPlayers.has(cleanName);
+      
+      if (isWithdrawn) {
+        withdrawnPlayersList.push({ player: playerName, score });
+        return;
+      }
+      
+      activePlayers.push([playerName, score]);
+    });
+
+    // Calculate places for active players
+    activePlayers.forEach((player, index) => {
+      const [playerName, score] = player;
       let place = currentPlace;
       let isTied = false;
       
       // Check if tied with previous player
-      if (index > 0 && sortedPlayers[index - 1][1] === score) {
+      if (index > 0 && activePlayers[index - 1][1] === score) {
         // Use the same place as previous player
         place = playersWithPlaces[index - 1].place;
         isTied = true;
@@ -146,7 +175,7 @@ const LeaderboardPage = () => {
       }
       
       // Check if tied with next player
-      if (index < sortedPlayers.length - 1 && sortedPlayers[index + 1][1] === score) {
+      if (index < activePlayers.length - 1 && activePlayers[index + 1][1] === score) {
         isTied = true;
       }
       
@@ -159,7 +188,7 @@ const LeaderboardPage = () => {
       });
       
       // Update currentPlace for next iteration
-      if (index === sortedPlayers.length - 1 || sortedPlayers[index + 1][1] !== score) {
+      if (index === activePlayers.length - 1 || activePlayers[index + 1][1] !== score) {
         currentPlace = index + 2; // Next available place
       }
     });
@@ -191,6 +220,24 @@ const LeaderboardPage = () => {
               <td style={{ padding: 8, textAlign: 'right' }}>{score}</td>
               {availableRounds.map(r => (
                 <td key={r} style={{ padding: 8, textAlign: 'right' }}>{scores?.playerScores?.[player]?.[r] ?? '-'}</td>
+              ))}
+            </tr>
+          ))}
+          {/* Withdrawn players at bottom */}
+          {withdrawnPlayersList.map(({ player, score }) => (
+            <tr key={player} style={{ backgroundColor: '#f5f5f5' }}>
+              <td style={{ padding: 8, textAlign: 'center', fontWeight: 'bold' }}>
+                WD
+              </td>
+              <td style={{ padding: 8, textDecoration: 'line-through', color: '#888' }}>
+                {(() => {
+                  const match = player.match(/\(([^)]+)\)$/);
+                  return match ? match[1] : '';
+                })()}
+              </td>
+              <td style={{ padding: 8, textAlign: 'right', textDecoration: 'line-through', color: '#888' }}>{score}</td>
+              {availableRounds.map(r => (
+                <td key={r} style={{ padding: 8, textAlign: 'right', textDecoration: 'line-through', color: '#888' }}>{scores?.playerScores?.[player]?.[r] ?? '-'}</td>
               ))}
             </tr>
           ))}
@@ -227,10 +274,24 @@ const LeaderboardPage = () => {
                 </td>
                 <td style={{ padding: 8 }}>
                   {Array.isArray(players) 
-                    ? players.map(player => {
+                    ? players.map((player, idx) => {
                         const match = player.match(/\(([^)]+)\)$/);
-                        return match ? match[1] : player;
-                      }).join(', ')
+                        const playerName = match ? match[1] : player;
+                        const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(playerName);
+                        const displayName = isWithdrawn ? `${playerName} (WD)` : playerName;
+                        return (
+                          <span 
+                            key={idx}
+                            style={{ 
+                              textDecoration: isWithdrawn ? 'line-through' : 'none',
+                              color: isWithdrawn ? '#888' : 'inherit'
+                            }}
+                          >
+                            {displayName}
+                            {idx < players.length - 1 ? ', ' : ''}
+                          </span>
+                        );
+                      })
                     : (players || 'N/A')
                   }
                 </td>
@@ -258,10 +319,24 @@ const LeaderboardPage = () => {
               </td>
               <td style={{ padding: 8 }}>
                 {Array.isArray(players) 
-                  ? players.map(player => {
+                  ? players.map((player, idx) => {
                       const match = player.match(/\(([^)]+)\)$/);
-                      return match ? match[1] : player;
-                    }).join(', ')
+                      const playerName = match ? match[1] : player;
+                      const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(playerName);
+                      const displayName = isWithdrawn ? `${playerName} (WD)` : playerName;
+                      return (
+                        <span 
+                          key={idx}
+                          style={{ 
+                            textDecoration: isWithdrawn ? 'line-through' : 'none',
+                            color: isWithdrawn ? '#888' : 'inherit'
+                          }}
+                        >
+                          {displayName}
+                          {idx < players.length - 1 ? ', ' : ''}
+                        </span>
+                      );
+                    })
                   : (players || 'N/A')
                 }
               </td>
