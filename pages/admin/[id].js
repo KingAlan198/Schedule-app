@@ -353,12 +353,26 @@ const AdminScoresPage = () => {
             {[...new Set(
               Object.values(schedule).flat().flatMap(teamObj => 
                 Object.values(teamObj).map(player => {
-                  // Ensure player is a string before calling match
-                  if (typeof player !== 'string') return String(player);
-                  const match = player.match(/\(([^)]+)\)$/);
-                  return match ? match[1] : player;
+                  // Handle different player data types
+                  let playerString;
+                  if (typeof player === 'string') {
+                    playerString = player;
+                  } else if (player && typeof player === 'object' && player.player) {
+                    // Handle player objects with .player property
+                    playerString = player.player;
+                  } else if (player && typeof player === 'object' && player.name) {
+                    // Handle player objects with .name property
+                    playerString = player.name;
+                  } else {
+                    // Skip invalid player data
+                    return null;
+                  }
+                  
+                  // Extract clean name from player string
+                  const match = playerString.match(/\(([^)]+)\)$/);
+                  return match ? match[1] : playerString;
                 })
-              )
+              ).filter(Boolean) // Remove null values
             )].sort().map(playerName => {
               const isWithdrawn = withdrawnPlayers.has(playerName);
               return (
