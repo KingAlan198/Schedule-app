@@ -176,28 +176,91 @@ const AssignPlayers = () => {
   const selectedB = bPlayers.length;
   const selectedC = cPlayers.length;
 
+  // Validation function
+  const validatePlayerCounts = () => {
+    const errors = [];
+    
+    if (requiredA !== null && selectedA !== requiredA) {
+      errors.push(`A Players: Need ${requiredA}, have ${selectedA}`);
+    }
+    if (requiredB !== null && selectedB !== requiredB) {
+      errors.push(`B Players: Need ${requiredB}, have ${selectedB}`);
+    }
+    if (requiredC !== null && selectedC !== requiredC) {
+      errors.push(`C Players: Need ${requiredC}, have ${selectedC}`);
+    }
+    
+    return errors;
+  };
+
+  const validationErrors = validatePlayerCounts();
+  const canFinalize = validationErrors.length === 0;
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Assign Players to Schedule</h1>
-        <button
-          style={{ fontWeight: 'bold', fontSize: 16, padding: '10px 24px', marginLeft: 16 }}
-          onClick={async () => {
-            setError(null);
-            try {
-              const payload = {
-                a: aPlayers,
-                b: bPlayers,
-                c: cPlayers
-              };
-              const response = await axios.post(
-                `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/finalize-schedule/${id}`,
-                payload
-              );
-              setFinalizedResults(response.data);
-              // Redirect to finalized schedule page
-              router.push(`/finalized/${id}`);
-            } catch (err) {
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          {/* Validation status */}
+          {validationErrors.length > 0 && (
+            <div style={{ 
+              marginBottom: 8, 
+              padding: '8px 12px', 
+              background: '#ffebee', 
+              border: '1px solid #f44336', 
+              borderRadius: 4,
+              fontSize: 14,
+              color: '#d32f2f'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Cannot finalize:</div>
+              {validationErrors.map((error, idx) => (
+                <div key={idx}>• {error}</div>
+              ))}
+            </div>
+          )}
+          {canFinalize && (
+            <div style={{ 
+              marginBottom: 8, 
+              padding: '8px 12px', 
+              background: '#e8f5e8', 
+              border: '1px solid #4caf50', 
+              borderRadius: 4,
+              fontSize: 14,
+              color: '#2e7d32'
+            }}>
+              ✓ Ready to finalize
+            </div>
+          )}
+          <button
+            style={{ 
+              fontWeight: 'bold', 
+              fontSize: 16, 
+              padding: '10px 24px',
+              background: canFinalize ? '#1976d2' : '#ccc',
+              color: canFinalize ? '#fff' : '#666',
+              border: 'none',
+              borderRadius: 4,
+              cursor: canFinalize ? 'pointer' : 'not-allowed'
+            }}
+            disabled={!canFinalize}
+            onClick={async () => {
+              if (!canFinalize) return;
+              
+              setError(null);
+              try {
+                const payload = {
+                  a: aPlayers,
+                  b: bPlayers,
+                  c: cPlayers
+                };
+                const response = await axios.post(
+                  `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/finalize-schedule/${id}`,
+                  payload
+                );
+                setFinalizedResults(response.data);
+                // Redirect to finalized schedule page
+                router.push(`/finalized/${id}`);
+              } catch (err) {
               let msg = 'Error finalizing schedule.';
               if (err.response && err.response.data) {
                 if (typeof err.response.data === 'string') {
@@ -214,6 +277,7 @@ const AssignPlayers = () => {
         >
           Finalize Assignments
         </button>
+        </div>
       </div>
       <div style={{ marginBottom: 16 }}>
         <button
