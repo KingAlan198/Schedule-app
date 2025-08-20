@@ -229,15 +229,28 @@ const LeaderboardPage = () => {
               <td style={{ padding: 8, textAlign: 'center', fontWeight: 'bold' }}>
                 WD
               </td>
-              <td style={{ padding: 8, textDecoration: 'line-through', color: '#888' }}>
-                {(() => {
-                  const match = player.match(/\(([^)]+)\)$/);
-                  return match ? match[1] : '';
-                })()}
+              <td style={{ padding: 8 }}>
+                <span style={{ 
+                  textDecoration: 'line-through', 
+                  color: '#888',
+                  textDecorationSkipInk: 'none',
+                  display: 'inline-block'
+                }}>
+                  {(() => {
+                    const match = player.match(/\(([^)]+)\)$/);
+                    if (match) {
+                      const fullText = match[1];
+                      // Remove any existing (WD) from the name
+                      return fullText.replace(/\s*\(WD\).*$/i, '');
+                    }
+                    return '';
+                  })()}
+                </span>
+                <span style={{ color: '#888', display: 'inline-block' }}> (wd)</span>
               </td>
-              <td style={{ padding: 8, textAlign: 'right', textDecoration: 'line-through', color: '#888' }}>{score}</td>
+              <td style={{ padding: 8, textAlign: 'right', color: '#888' }}>{score}</td>
               {availableRounds.map(r => (
-                <td key={r} style={{ padding: 8, textAlign: 'right', textDecoration: 'line-through', color: '#888' }}>{scores?.playerScores?.[player]?.[r] ?? '-'}</td>
+                <td key={r} style={{ padding: 8, textAlign: 'right', color: '#888' }}>{scores?.playerScores?.[player]?.[r] ?? '-'}</td>
               ))}
             </tr>
           ))}
@@ -276,19 +289,24 @@ const LeaderboardPage = () => {
                   {Array.isArray(players) 
                     ? players.map((player, idx) => {
                         const match = player.match(/\(([^)]+)\)$/);
-                        const playerName = match ? match[1] : player;
-                        const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(playerName);
-                        const displayName = isWithdrawn ? `${playerName} (WD)` : playerName;
+                        const fullPlayerName = match ? match[1] : player;
+                        const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(fullPlayerName) || fullPlayerName.includes('(WD)');
+                        
+                        // Clean the player name by removing any (WD) suffix
+                        const cleanPlayerName = fullPlayerName.replace(/\s*\(WD\).*$/i, '');
+                        
                         return (
-                          <span 
-                            key={idx}
-                            style={{ 
-                              textDecoration: isWithdrawn ? 'line-through' : 'none',
-                              color: isWithdrawn ? '#888' : 'inherit'
-                            }}
-                          >
-                            {displayName}
-                            {idx < players.length - 1 ? ', ' : ''}
+                          <span key={idx}>
+                            <span 
+                              style={{ 
+                                textDecoration: isWithdrawn ? 'line-through' : 'none',
+                                color: isWithdrawn ? '#888' : 'inherit'
+                              }}
+                            >
+                              {cleanPlayerName}
+                            </span>
+                            {isWithdrawn && <span style={{ color: '#888' }}> (WD)</span>}
+                            {idx < players.length - 1 && <span>, </span>}
                           </span>
                         );
                       })
@@ -321,19 +339,26 @@ const LeaderboardPage = () => {
                 {Array.isArray(players) 
                   ? players.map((player, idx) => {
                       const match = player.match(/\(([^)]+)\)$/);
-                      const playerName = match ? match[1] : player;
-                      const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(playerName);
-                      const displayName = isWithdrawn ? `${playerName} (WD)` : playerName;
+                      const fullPlayerName = match ? match[1] : player;
+                      const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(fullPlayerName) || fullPlayerName.includes('(WD)');
+                      
+                      // Clean the player name by removing any (WD) suffix
+                      const cleanPlayerName = fullPlayerName.replace(/\s*\(WD\).*$/i, '');
+                      
                       return (
-                        <span 
-                          key={idx}
-                          style={{ 
-                            textDecoration: isWithdrawn ? 'line-through' : 'none',
-                            color: isWithdrawn ? '#888' : 'inherit'
-                          }}
-                        >
-                          {displayName}
-                          {idx < players.length - 1 ? ', ' : ''}
+                        <span key={idx}>
+                          <span 
+                            style={{ 
+                              textDecoration: isWithdrawn ? 'line-through' : 'none',
+                              color: isWithdrawn ? '#888' : 'inherit',
+                              textDecorationSkipInk: 'none',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {cleanPlayerName}
+                          </span>
+                          {isWithdrawn && <span style={{ color: '#888', display: 'inline-block' }}> (WD)</span>}
+                          {idx < players.length - 1 && <span style={{ display: 'inline-block' }}>, </span>}
                         </span>
                       );
                     })
