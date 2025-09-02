@@ -13,7 +13,11 @@ const AdminScoresPage = () => {
   const [teamNames, setTeamNames] = useState({});
   const [showQR, setShowQR] = useState(false);
   const [withdrawnPlayers, setWithdrawnPlayers] = useState(new Set());
-  const [activeTab, setActiveTab] = useState('scores'); // 'scores' or 'withdrawals'
+  const [activeTab, setActiveTab] = useState('scores'); // 'scores', 'withdrawals', or 'movements'
+  const [selectedPlayer, setSelectedPlayer] = useState('');
+  const [selectedFromTeam, setSelectedFromTeam] = useState('');
+  const [selectedToTeam, setSelectedToTeam] = useState('');
+  const [selectedMoveRound, setSelectedMoveRound] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -145,6 +149,91 @@ const AdminScoresPage = () => {
     setSaving(false);
   };
 
+  const handleMovePlayer = async () => {
+    if (!selectedPlayer || !selectedFromTeam || !selectedToTeam || !selectedMoveRound) {
+      setMessage('Please select all fields for player movement.');
+      return;
+    }
+
+    if (selectedFromTeam === selectedToTeam) {
+      setMessage('Cannot move player to the same team.');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+    
+    try {
+      console.log('Moving player:', {
+        player: selectedPlayer,
+        from: selectedFromTeam,
+        to: selectedToTeam,
+        round: selectedMoveRound
+      });
+      
+      const moveRequest = {
+        round: selectedMoveRound,
+        playerName: selectedPlayer,
+        fromTeam: selectedFromTeam,
+        toTeam: selectedToTeam
+      };
+      
+      console.log('Sending move request:', moveRequest);
+      console.log('API URL:', `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/move-player/${id}`);
+      
+      // Send move request to backend
+      const response = await axios.post(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/move-player/${id}`, moveRequest, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000 // 30 second timeout
+      });
+      
+      console.log('Move response:', response);
+      
+      // If successful, reload the schedule data
+      const scheduleRes = await axios.get(`https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/view-finalized-schedule/${id}`);
+      if (scheduleRes) {
+        const scheduleData = typeof scheduleRes.data === 'string' ? JSON.parse(scheduleRes.data) : scheduleRes.data;
+        setSchedule(scheduleData);
+      }
+      
+      setMessage(`Successfully moved ${selectedPlayer} from ${teamNames[selectedMoveRound]?.[selectedFromTeam] || selectedFromTeam} to ${teamNames[selectedMoveRound]?.[selectedToTeam] || selectedToTeam}!`);
+      
+      // Reset selections
+      setSelectedPlayer('');
+      setSelectedFromTeam('');
+      setSelectedToTeam('');
+      
+    } catch (err) {
+      console.error('Error moving player:', err);
+      console.error('Error response:', err.response);
+      console.error('Error request:', err.request);
+      console.error('Error config:', err.config);
+      
+      let errorMessage = 'Error moving player';
+      
+      if (err.response) {
+        // Server responded with error status
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+        errorMessage = `Error ${err.response.status}: ${err.response.data?.message || err.response.statusText}`;
+      } else if (err.request) {
+        // Request was made but no response received
+        console.error('No response received:', err.request);
+        errorMessage = 'Network Error: No response from server. Check if the API endpoint exists.';
+      } else {
+        // Something else happened
+        console.error('Request setup error:', err.message);
+        errorMessage = `Request Error: ${err.message}`;
+      }
+      
+      setMessage(errorMessage);
+    }
+    
+    setSaving(false);
+  };
+
   const handleSave = async (round) => {
     setSaving(true);
     setMessage('');
@@ -238,6 +327,7 @@ const AdminScoresPage = () => {
         <button
           onClick={() => setActiveTab('withdrawals')}
           style={{
+            marginRight: 8,
             padding: '8px 20px',
             fontWeight: activeTab === 'withdrawals' ? 'bold' : 'normal',
             background: activeTab === 'withdrawals' ? '#d32f2f' : 'transparent',
@@ -250,6 +340,22 @@ const AdminScoresPage = () => {
           }}
         >
           Player Withdrawals
+        </button>
+        <button
+          onClick={() => setActiveTab('movements')}
+          style={{
+            padding: '8px 20px',
+            fontWeight: activeTab === 'movements' ? 'bold' : 'normal',
+            background: activeTab === 'movements' ? '#ff9800' : 'transparent',
+            color: activeTab === 'movements' ? '#fff' : '#ff9800',
+            border: activeTab === 'movements' ? 'none' : '2px solid #ff9800',
+            borderBottom: activeTab === 'movements' ? 'none' : '2px solid #ff9800',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            fontSize: 16
+          }}
+        >
+          Player Movements
         </button>
       </div>
 
@@ -395,6 +501,141 @@ const AdminScoresPage = () => {
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'movements' && (
+        <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 16, background: '#fff8e1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h2 style={{ margin: 0, color: '#ff9800' }}>Player Movements</h2>
+            <button 
+              onClick={handleMovePlayer} 
+              disabled={saving || !selectedPlayer || !selectedFromTeam || !selectedToTeam || !selectedMoveRound}
+              style={{
+                padding: '8px 16px',
+                background: (!selectedPlayer || !selectedFromTeam || !selectedToTeam || !selectedMoveRound || saving) ? '#ccc' : '#ff9800',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: (!selectedPlayer || !selectedFromTeam || !selectedToTeam || !selectedMoveRound || saving) ? 'not-allowed' : 'pointer',
+                fontSize: 14
+              }}
+            >
+              {saving ? 'Moving...' : 'Move Player'}
+            </button>
+          </div>
+          <p style={{ marginBottom: 16, color: '#666' }}>
+            Move a player from one team to another within a round. Select the round, player, source team, and destination team.
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Round:</label>
+              <select 
+                value={selectedMoveRound} 
+                onChange={(e) => {
+                  setSelectedMoveRound(e.target.value);
+                  setSelectedPlayer('');
+                  setSelectedFromTeam('');
+                  setSelectedToTeam('');
+                }}
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                <option value="">Select Round</option>
+                {Object.keys(schedule || {}).filter(key => /^round/i.test(key)).map(round => (
+                  <option key={round} value={round}>
+                    {round.replace(/^round/i, 'Round ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Player:</label>
+              <select 
+                value={selectedPlayer} 
+                onChange={(e) => setSelectedPlayer(e.target.value)}
+                disabled={!selectedMoveRound}
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                <option value="">Select Player</option>
+                {selectedMoveRound && [...new Set(
+                  schedule[selectedMoveRound]?.flatMap(teamObj => 
+                    Object.values(teamObj).map(player => {
+                      const playerString = typeof player === 'string' ? player : 
+                                          (player?.player || player?.name || '');
+                      const match = playerString.match(/\(([^)]+)\)$/);
+                      return match ? match[1] : playerString;
+                    })
+                  ).filter(Boolean) || []
+                )].sort().map(playerName => (
+                  <option key={playerName} value={playerName}>
+                    {playerName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>From Team:</label>
+              <select 
+                value={selectedFromTeam} 
+                onChange={(e) => setSelectedFromTeam(e.target.value)}
+                disabled={!selectedPlayer || !selectedMoveRound}
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                <option value="">Select Source Team</option>
+                {selectedMoveRound && schedule[selectedMoveRound]?.map((teamObj, idx) => {
+                  const teamKey = `team${idx + 1}`;
+                  const teamDisplayName = teamNames[selectedMoveRound]?.[teamKey] || teamKey;
+                  
+                  // Check if selected player is in this team
+                  const hasPlayer = Object.values(teamObj).some(player => {
+                    const playerString = typeof player === 'string' ? player : 
+                                        (player?.player || player?.name || '');
+                    const match = playerString.match(/\(([^)]+)\)$/);
+                    const cleanName = match ? match[1] : playerString;
+                    return cleanName === selectedPlayer;
+                  });
+                  
+                  if (!hasPlayer) return null;
+                  
+                  return (
+                    <option key={teamKey} value={teamKey}>
+                      {teamDisplayName}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>To Team:</label>
+              <select 
+                value={selectedToTeam} 
+                onChange={(e) => setSelectedToTeam(e.target.value)}
+                disabled={!selectedFromTeam || !selectedMoveRound}
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              >
+                <option value="">Select Destination Team</option>
+                {selectedMoveRound && schedule[selectedMoveRound]?.map((teamObj, idx) => {
+                  const teamKey = `team${idx + 1}`;
+                  const teamDisplayName = teamNames[selectedMoveRound]?.[teamKey] || teamKey;
+                  
+                  // Don't show the source team as an option
+                  if (teamKey === selectedFromTeam) return null;
+                  
+                  return (
+                    <option key={teamKey} value={teamKey}>
+                      {teamDisplayName}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
         </div>
       )}
