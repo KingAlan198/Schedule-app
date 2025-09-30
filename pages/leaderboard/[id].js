@@ -118,11 +118,36 @@ const LeaderboardPage = () => {
       });
     }
     
-    // Sort: teams with scores first (by score), then teams without scores
+    // Sort: teams with scores first (by score), then teams without scores (by starting hole)
     return teamsWithScores.sort((a, b) => {
       if (a.hasScore && b.hasScore) return a.score - b.score;
       if (a.hasScore && !b.hasScore) return -1;
       if (!a.hasScore && b.hasScore) return 1;
+      
+      // If neither has scores, sort by starting hole
+      if (!a.hasScore && !b.hasScore) {
+        // Extract hole number and suffix for proper sorting
+        const parseHole = (teamName) => {
+          const match = teamName.match(/^(\d+)([ab])$/);
+          if (match) {
+            return {
+              number: parseInt(match[1]),
+              suffix: match[2]
+            };
+          }
+          return { number: 999, suffix: 'z' }; // Fallback for non-standard names
+        };
+        
+        const holeA = parseHole(a.teamName);
+        const holeB = parseHole(b.teamName);
+        
+        // Sort by hole number first, then by suffix (a before b)
+        if (holeA.number !== holeB.number) {
+          return holeA.number - holeB.number;
+        }
+        return holeA.suffix.localeCompare(holeB.suffix);
+      }
+      
       return 0;
     });
   };
