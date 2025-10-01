@@ -119,7 +119,7 @@ const LeaderboardPage = () => {
     }
     
     // Sort: teams with scores first (by score), then teams without scores (by starting hole)
-    return teamsWithScores.sort((a, b) => {
+    const sorted = teamsWithScores.sort((a, b) => {
       if (a.hasScore && b.hasScore) return a.score - b.score;
       if (a.hasScore && !b.hasScore) return -1;
       if (!a.hasScore && b.hasScore) return 1;
@@ -128,7 +128,8 @@ const LeaderboardPage = () => {
       if (!a.hasScore && !b.hasScore) {
         // Extract hole number and suffix for proper sorting
         const parseHole = (teamName) => {
-          const match = teamName.match(/^(\d+)([ab])$/);
+          // Handle both formats: {number}{a|b} and {number}{c|d|e|...}
+          const match = teamName.match(/^(\d+)([a-z])$/);
           if (match) {
             return {
               number: parseInt(match[1]),
@@ -141,7 +142,7 @@ const LeaderboardPage = () => {
         const holeA = parseHole(a.teamName);
         const holeB = parseHole(b.teamName);
         
-        // Sort by hole number first, then by suffix (a before b)
+        // Sort by hole number first, then by suffix alphabetically
         if (holeA.number !== holeB.number) {
           return holeA.number - holeB.number;
         }
@@ -150,6 +151,11 @@ const LeaderboardPage = () => {
       
       return 0;
     });
+    
+    // Debug log to see sorting
+    console.log(`Round ${round} teams:`, sorted.map(t => `${t.teamName}(${t.hasScore ? 'scored' : 'no score'})`));
+    
+    return sorted;
   };
 
   const renderPlayerLeaderboard = () => {
@@ -287,6 +293,9 @@ const LeaderboardPage = () => {
   const renderRoundTeamLeaderboard = (round) => {
     const teamScores = getTeamScoresForRound(round);
     
+    // Force re-render by using JSON.stringify to detect changes
+    const dataKey = JSON.stringify(teamScores.map(t => ({ teamName: t.teamName, hasScore: t.hasScore, score: t.score })));
+    
     if (teamScores.length === 0) {
       return <div style={{ marginTop: 24, color: '#888' }}>No team data for {round}</div>;
     }
@@ -297,7 +306,7 @@ const LeaderboardPage = () => {
     if (!hasAnyScores) {
       // Before scores: Show team name (starting hole) and players
       return (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
+        <table key={`pre-scores-${dataKey}`} style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
           <thead>
             <tr style={{ background: '#f0f0f0' }}>
               <th style={{ textAlign: 'left', padding: 8 }}>Starting Hole</th>
@@ -347,7 +356,7 @@ const LeaderboardPage = () => {
 
     // After scores: Show scores and players (no team name)
     return (
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
+      <table key={`post-scores-${dataKey}`} style={{ width: '100%', borderCollapse: 'collapse', marginTop: 24 }}>
         <thead>
           <tr style={{ background: '#f0f0f0' }}>
             <th style={{ textAlign: 'right', padding: 8 }}>Score</th>
