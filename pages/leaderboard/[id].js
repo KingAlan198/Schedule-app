@@ -98,14 +98,22 @@ const LeaderboardPage = () => {
         const roundNum = parseInt(round.replace(/^round/i, ''));
         let defaultTeamName;
         
-        if (roundNum % 2 === 1) { // Odd rounds (1, 3): 1a, 1b, 2a, 2b
-          const groupNum = Math.floor(idx / 2) + 1;
-          const suffix = idx % 2 === 0 ? 'a' : 'b';
-          defaultTeamName = `${groupNum}${suffix}`;
-        } else { // Even rounds (2, 4): 10a, 10b, 11a, 11b
-          const groupNum = Math.floor(idx / 2) + 10;
-          const suffix = idx % 2 === 0 ? 'a' : 'b';
-          defaultTeamName = `${groupNum}${suffix}`;
+        if (roundNum % 2 === 1) { // Odd rounds (1, 3): 1a, 1b, 2a, 2b, but 10a becomes 2c
+          if (idx === 18) { // Team index 18 (what would be 10a)
+            defaultTeamName = '2c';
+          } else {
+            const groupNum = Math.floor(idx / 2) + 1;
+            const suffix = idx % 2 === 0 ? 'a' : 'b';
+            defaultTeamName = `${groupNum}${suffix}`;
+          }
+        } else { // Even rounds (2, 4): 10a, 10b, 11a, 11b, but 19a becomes 12c
+          if (idx === 18) { // Team index 18 (what would be 19a)
+            defaultTeamName = '12c';
+          } else {
+            const groupNum = Math.floor(idx / 2) + 10;
+            const suffix = idx % 2 === 0 ? 'a' : 'b';
+            defaultTeamName = `${groupNum}${suffix}`;
+          }
         }
         
         teamsWithScores.push({
