@@ -1,8 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const Schedule = () => {
+  const router = useRouter();
   const [totalPlayers, setTotalPlayers] = useState('');
   const [aPlayers, setAPlayers] = useState('');
   const [scheduleData, setScheduleData] = useState(null);
@@ -11,6 +13,43 @@ const Schedule = () => {
   const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [shareId, setShareId] = useState(null);
+  const [tournamentId, setTournamentId] = useState(null);
+  const [flow, setFlow] = useState('traditional');
+
+  // Handle URL parameters (for players-first flow)
+  useEffect(() => {
+    if (router.isReady) {
+      const { 
+        totalPlayers: urlTotalPlayers, 
+        aPlayers: urlAPlayers, 
+        tournamentId: urlTournamentId, 
+        flow: urlFlow 
+      } = router.query;
+      
+      console.log('URL parameters:', { urlTotalPlayers, urlAPlayers, urlTournamentId, urlFlow });
+      
+      if (urlTotalPlayers) {
+        setTotalPlayers(urlTotalPlayers);
+      }
+      if (urlAPlayers) {
+        setAPlayers(urlAPlayers);
+      }
+      if (urlTournamentId) {
+        setTournamentId(urlTournamentId);
+      }
+      if (urlFlow) {
+        setFlow(urlFlow);
+      }
+    }
+  }, [router.isReady, router.query]);
+
+  // Auto-generate schedule for players-first flow (separate useEffect to ensure state is set)
+  useEffect(() => {
+    if (flow === 'players-first' && totalPlayers && aPlayers && !scheduleData) {
+      console.log('Auto-generating schedule with:', { totalPlayers, aPlayers });
+      handleSubmit();
+    }
+  }, [flow, totalPlayers, aPlayers, scheduleData]);
   // Save schedule handler
   const handleSave = async () => {
     setSaving(true);
@@ -50,17 +89,26 @@ const Schedule = () => {
       e.preventDefault();
     }
 
-    if (totalPlayers === '' || aPlayers === '') {
-      alert('Please enter values for Total Players and A-Players.');
+    console.log('handleSubmit called with:', { totalPlayers, aPlayers, types: { totalPlayers: typeof totalPlayers, aPlayers: typeof aPlayers } });
+
+    // Convert to numbers for validation
+    const totalPlayersNum = Number(totalPlayers);
+    const aPlayersNum = Number(aPlayers);
+
+    console.log('Converted to numbers:', { totalPlayersNum, aPlayersNum, isNaN: { total: isNaN(totalPlayersNum), a: isNaN(aPlayersNum) } });
+
+    if (isNaN(totalPlayersNum) || isNaN(aPlayersNum) || totalPlayersNum <= 0 || aPlayersNum < 0) {
+      console.log('Validation failed:', { totalPlayersNum, aPlayersNum });
+      alert('Please enter valid values for Total Players and A-Players.');
       return;
     }
 
-    if (aPlayers > 0 && aPlayers < 4) {
+    if (aPlayersNum > 0 && aPlayersNum < 4) {
       alert('Scheduling app needs 0 or 4 or more A-Players.');
       return;
     }
 
-    const apiUrl = `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/schedule/totalplayers/${totalPlayers}/aplayers/${aPlayers}`;
+    const apiUrl = `https://57nxom0eme.execute-api.us-east-1.amazonaws.com/dev/schedule/totalplayers/${totalPlayersNum}/aplayers/${aPlayersNum}`;
 
     try {
       const response = await axios.get(apiUrl);
@@ -112,14 +160,49 @@ const Schedule = () => {
 
   return (
     <div>
-      <h1>Schedule Generator</h1>
-      <ul>
-        <li>Enter the total number of players.</li>
-        <li>Enter the number of A-Players.  The same number of C-Players will be assumed.</li>
-        <li>An A-Player will always play with a C-Player.</li>
-        <li>Two A-Players will never play together.</li>
-        <li>No players will ever play together more than once.</li>
-      </ul>
+      {flow === 'players-first' && tournamentId ? (
+        <div style={{ 
+          background: '#e3f2fd', 
+          padding: 16, 
+          borderRadius: 8, 
+          marginBottom: 24,
+          border: '1px solid #1976d2'
+        }}>
+          <h2 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>
+            Players-First Tournament Schedule
+          </h2>
+          <p style={{ margin: 0, color: '#333' }}>
+            Tournament ID: <strong>{tournamentId}</strong> | 
+            Generated from {totalPlayers} selected players ({aPlayers} A-players)
+          </p>
+          <button
+            onClick={() => router.push(`/select-players/${tournamentId}`)}
+            style={{
+              marginTop: 12,
+              padding: '8px 16px',
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            ← Back to Player Selection
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h1>Schedule Generator</h1>
+          <ul>
+            <li>Enter the total number of players.</li>
+            <li>Enter the number of A-Players.  The same number of C-Players will be assumed.</li>
+            <li>An A-Player will always play with a C-Player.</li>
+            <li>Two A-Players will never play together.</li>
+            <li>No players will ever play together more than once.</li>
+          </ul>
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit}>
         <label>
           Total Players:

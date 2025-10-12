@@ -183,8 +183,9 @@ const LeaderboardPage = () => {
       const [playerName, score] = player;
       // Extract clean name from player identifier for withdrawal check
       const cleanName = (() => {
-        const match = playerName.match(/\(([^)]+)\)$/);
-        return match ? match[1] : playerName;
+        // Extract player name (part before parentheses)
+        const match = playerName.match(/^([^(]+)/);
+        return match ? match[1].trim() : playerName;
       })();
       const isWithdrawn = withdrawnPlayers.has(playerName) || withdrawnPlayers.has(cleanName);
       
@@ -252,8 +253,9 @@ const LeaderboardPage = () => {
               </td>
               <td style={{ padding: 8 }}>
                 {(() => {
-                  const match = player.match(/\(([^)]+)\)$/);
-                  return match ? match[1] : '';
+                  // Extract player name (part before parentheses)
+                  const match = player.match(/^([^(]+)/);
+                  return match ? match[1].trim() : player;
                 })()}
               </td>
               <td style={{ padding: 8, textAlign: 'right' }}>{score}</td>
@@ -276,13 +278,11 @@ const LeaderboardPage = () => {
                   display: 'inline-block'
                 }}>
                   {(() => {
-                    const match = player.match(/\(([^)]+)\)$/);
-                    if (match) {
-                      const fullText = match[1];
-                      // Remove any existing (WD) from the name
-                      return fullText.replace(/\s*\(WD\).*$/i, '');
-                    }
-                    return '';
+                    // Extract player name (part before parentheses)
+                    const match = player.match(/^([^(]+)/);
+                    const fullText = match ? match[1].trim() : player;
+                    // Remove any existing (WD) from the name
+                    return fullText.replace(/\s*\(WD\).*$/i, '');
                   })()}
                 </span>
                 <span style={{ color: '#888', display: 'inline-block' }}> (wd)</span>
@@ -330,8 +330,9 @@ const LeaderboardPage = () => {
                 <td style={{ padding: 8 }}>
                   {Array.isArray(players) 
                     ? players.map((player, idx) => {
-                        const match = player.match(/\(([^)]+)\)$/);
-                        const fullPlayerName = match ? match[1] : player;
+                        // Extract player name (part before parentheses)
+                        const match = player.match(/^([^(]+)/);
+                        const fullPlayerName = match ? match[1].trim() : player;
                         const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(fullPlayerName) || fullPlayerName.includes('(WD)');
                         
                         // Clean the player name by removing any (WD) suffix
@@ -380,8 +381,9 @@ const LeaderboardPage = () => {
               <td style={{ padding: 8 }}>
                 {Array.isArray(players) 
                   ? players.map((player, idx) => {
-                      const match = player.match(/\(([^)]+)\)$/);
-                      const fullPlayerName = match ? match[1] : player;
+                      // Extract player name (part before parentheses)
+                      const match = player.match(/^([^(]+)/);
+                      const fullPlayerName = match ? match[1].trim() : player;
                       const isWithdrawn = withdrawnPlayers.has(player) || withdrawnPlayers.has(fullPlayerName) || fullPlayerName.includes('(WD)');
                       
                       // Clean the player name by removing any (WD) suffix

@@ -6,14 +6,14 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to /schedule when the homepage loads
-    router.replace('/schedule');
+    // Redirect to tournament setup page when the homepage loads
+    router.replace('/tournament-setup');
   }, [router]);
 
   // Show loading message while redirecting
   return (
     <div style={{ textAlign: 'center', padding: '50px' }}>
-      <h1>Redirecting to Schedule Generator...</h1>
+      <h1>Setting up Tournament Creator...</h1>
     </div>
   );
 }

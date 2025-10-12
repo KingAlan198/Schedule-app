@@ -408,10 +408,9 @@ const AdminScoresPage = () => {
                 </div>
                 <ul style={{ marginLeft: 16 }}>
                   {Object.values(teamObj).map((name, i) => {
-                    const playerName = (() => {
-                      const match = name.match(/\(([^)]+)\)$/);
-                      return match ? match[1] : name;
-                    })();
+                    // Extract player name (part before parentheses)
+                    const match = name.match(/^([^(]+)/);
+                    const playerName = match ? match[1].trim() : name;
                     return <li key={i}>{playerName}</li>;
                   })}
                 </ul>
@@ -475,8 +474,8 @@ const AdminScoresPage = () => {
                   }
                   
                   // Extract clean name from player string
-                  const match = playerString.match(/\(([^)]+)\)$/);
-                  return match ? match[1] : playerString;
+                  const match = playerString.match(/^([^(]+)/);
+                  return match ? match[1].trim() : playerString;
                 })
               ).filter(Boolean) // Remove null values
             )].sort().map(playerName => {
@@ -565,8 +564,8 @@ const AdminScoresPage = () => {
                     Object.values(teamObj).map(player => {
                       const playerString = typeof player === 'string' ? player : 
                                           (player?.player || player?.name || '');
-                      const match = playerString.match(/\(([^)]+)\)$/);
-                      return match ? match[1] : playerString;
+                      const match = playerString.match(/^([^(]+)/);
+                      return match ? match[1].trim() : playerString;
                     })
                   ).filter(Boolean) || []
                 )].sort().map(playerName => (
