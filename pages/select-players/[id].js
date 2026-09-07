@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
+const { addPlayerToRoster, playerExists } = require('../../utils/playerRoster');
+
 const SelectPlayersPage = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -13,6 +15,8 @@ const SelectPlayersPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRank, setFilterRank] = useState('all');
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerRank, setNewPlayerRank] = useState('A');
   const [saving, setSaving] = useState(false);
 
   // Load player roster on component mount
@@ -170,6 +174,29 @@ const SelectPlayersPage = () => {
     };
     
     return counts;
+  };
+
+  const handleAddPlayer = () => {
+    const trimmedName = newPlayerName.trim();
+
+    if (!trimmedName) {
+      alert('Please enter a player name.');
+      return;
+    }
+
+    if (playerExists(availablePlayers, trimmedName)) {
+      alert(`Player "${trimmedName}" is already in the roster.`);
+      return;
+    }
+
+    try {
+      const nextRoster = addPlayerToRoster(availablePlayers, trimmedName, newPlayerRank);
+      setAvailablePlayers(nextRoster);
+      setNewPlayerName('');
+      setNewPlayerRank('A');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   // Handle player rank change
@@ -461,6 +488,63 @@ const SelectPlayersPage = () => {
               Clear All
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Add new player */}
+      <div style={{ 
+        background: '#fff', 
+        padding: 20, 
+        borderRadius: 8, 
+        marginBottom: 24,
+        border: '1px solid #e9ecef'
+      }}>
+        <h4 style={{ margin: '0 0 12px 0' }}>Add a New Player</h4>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={newPlayerName}
+            onChange={(e) => setNewPlayerName(e.target.value)}
+            placeholder="Enter player name"
+            style={{
+              flex: 1,
+              minWidth: 220,
+              padding: 10,
+              border: '2px solid #dee2e6',
+              borderRadius: 6,
+              fontSize: 16
+            }}
+          />
+          <select
+            value={newPlayerRank}
+            onChange={(e) => setNewPlayerRank(e.target.value)}
+            style={{
+              padding: 10,
+              border: '2px solid #dee2e6',
+              borderRadius: 6,
+              fontSize: 16,
+              minWidth: 110
+            }}
+          >
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <button
+            onClick={handleAddPlayer}
+            disabled={!newPlayerName.trim() || playerExists(availablePlayers, newPlayerName)}
+            style={{
+              padding: '10px 18px',
+              background: (!newPlayerName.trim() || playerExists(availablePlayers, newPlayerName)) ? '#ccc' : '#1976d2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: (!newPlayerName.trim() || playerExists(availablePlayers, newPlayerName)) ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Add Player
+          </button>
         </div>
       </div>
 
