@@ -564,7 +564,8 @@ const AdminScoresPage = () => {
                     Object.values(teamObj).map(player => {
                       const playerString = typeof player === 'string' ? player : 
                                           (player?.player || player?.name || '');
-                      const match = playerString.match(/^([^(]+)/);
+                      // Match the name extraction used for team membership checks and the backend
+                      const match = playerString.match(/\(([^)]+)\)$/);
                       return match ? match[1].trim() : playerString;
                     })
                   ).filter(Boolean) || []
