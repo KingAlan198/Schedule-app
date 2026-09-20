@@ -265,6 +265,24 @@ const AdminScoresPage = () => {
   const roundKeys = Object.keys(schedule).filter(k => /^round/i.test(k));
   const selectedRound = roundKeys[selectedRoundIdx];
 
+  // Build { value, label } options for the move-player dropdown, showing code and name (when available)
+  const playerOptionsMap = new Map();
+  if (selectedMoveRound && schedule[selectedMoveRound]) {
+    schedule[selectedMoveRound].forEach(teamObj => {
+      Object.values(teamObj).forEach(player => {
+        const playerString = typeof player === 'string' ? player :
+                            (player?.player || player?.name || '');
+        if (!playerString) return;
+        const match = playerString.match(/\(([^)]+)\)$/);
+        const code = playerString.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        const value = match ? match[1].trim() : playerString;
+        const label = match ? `${code} (${match[1].trim()})` : code;
+        playerOptionsMap.set(value, label);
+      });
+    });
+  }
+  const playerOptions = [...playerOptionsMap.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 32 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -559,19 +577,9 @@ const AdminScoresPage = () => {
                 style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
               >
                 <option value="">Select Player</option>
-                {selectedMoveRound && [...new Set(
-                  schedule[selectedMoveRound]?.flatMap(teamObj => 
-                    Object.values(teamObj).map(player => {
-                      const playerString = typeof player === 'string' ? player : 
-                                          (player?.player || player?.name || '');
-                      // Match the name extraction used for team membership checks and the backend
-                      const match = playerString.match(/\(([^)]+)\)$/);
-                      return match ? match[1].trim() : playerString;
-                    })
-                  ).filter(Boolean) || []
-                )].sort().map(playerName => (
-                  <option key={playerName} value={playerName}>
-                    {playerName}
+                {playerOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
                   </option>
                 ))}
               </select>
